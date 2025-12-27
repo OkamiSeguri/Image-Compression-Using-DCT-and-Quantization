@@ -101,6 +101,57 @@
             font-size: 1em;
         }
 
+        .mode-explanation {
+            margin-top: 10px;
+            padding: 15px;
+            background: linear-gradient(135deg, #e8f4f8 0%, #f0f7fa 100%);
+            border-left: 4px solid #667eea;
+            border-radius: 0 8px 8px 0;
+            font-size: 0.9em;
+            color: #444;
+            line-height: 1.6;
+        }
+
+        .mode-explanation strong {
+            color: #667eea;
+        }
+
+        .comparison-info {
+            background: #fff8e6;
+            border: 1px solid #ffc107;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+            font-size: 0.9em;
+        }
+
+        .comparison-info h4 {
+            color: #856404;
+            margin-bottom: 8px;
+        }
+
+        .comparison-info ul {
+            margin-left: 20px;
+            color: #666;
+        }
+
+        .comparison-info li {
+            margin-bottom: 5px;
+        }
+
+        .viz-explanation {
+            margin-top: 12px;
+            padding: 12px;
+            background: #f5f5f5;
+            border-radius: 6px;
+            font-size: 0.85em;
+            color: #555;
+            line-height: 1.5;
+            text-align: left;
+        }
+            font-size: 1em;
+        }
+
         .slider-value {
             display: inline-block;
             font-weight: bold;
@@ -186,8 +237,15 @@
         }
 
         .qmatrix h3 {
-            margin-bottom: 15px;
+            margin-bottom: 10px;
             color: #333;
+        }
+
+        .qmatrix-explanation {
+            margin-bottom: 15px;
+            font-size: 0.9em;
+            color: #555;
+            line-height: 1.5;
         }
 
         .qmatrix-grid {
@@ -251,24 +309,29 @@
 
                 <div class="control-group">
                     <label for="qualitySlider">
-                        🎚️ Quality Factor: <span class="slider-value" id="qualityValue">50</span>
+                        Quality Factor: <span class="slider-value" id="qualityValue">50</span>
                     </label>
                     <input type="range" id="qualitySlider" min="1" max="100" value="50">
                 </div>
 
                 <div class="control-group">
-                    <label for="colorMode">🎨 Color Mode</label>
+                    <label for="colorMode">Color Mode</label>
                     <select id="colorMode">
                         <option value="RGB">RGB (Full Color)</option>
                         <option value="YCbCr">YCbCr (JPEG Standard)</option>
                         <option value="GRAYSCALE">Grayscale (Luminance Only)</option>
                     </select>
+                    <div id="colorModeExplanation" class="mode-explanation">
+                        <strong>RGB Mode:</strong> Processes Red, Green, Blue channels separately. 
+                        Each channel undergoes DCT and quantization independently. Simple but less efficient 
+                        than YCbCr because it doesn't exploit human visual perception characteristics.
+                    </div>
                 </div>
 
                 <div style="text-align: center; margin-top: 20px;">
-                    <button class="btn" id="compressBtn" disabled>🔄 Compress Image</button>
-                    <button class="btn" id="visualizeBtn" disabled style="margin-left: 10px;">👁️ Show Visualizations</button>
-                    <button class="btn" id="downloadBtn" disabled style="margin-left: 10px;">💾 Download</button>
+                    <button class="btn" id="compressBtn" disabled>Compress Image</button>
+                    <button class="btn" id="visualizeBtn" disabled style="margin-left: 10px;">Show Visualizations</button>
+                    <button class="btn" id="downloadBtn" disabled style="margin-left: 10px;">Download</button>
                 </div>
             </div>
 
@@ -306,11 +369,26 @@
                         <img id="compressedImage" src="" alt="Compressed">
                     </div>
                 </div>
+                <div id="compressionExplanation" class="comparison-info">
+                    <h4>What happened during compression?</h4>
+                    <ul id="compressionSteps">
+                        <li><strong>Color Space Conversion:</strong> Image converted to YCbCr color space</li>
+                        <li><strong>Block Division:</strong> Image split into 8x8 pixel blocks</li>
+                        <li><strong>DCT Transform:</strong> Each block converted to frequency domain</li>
+                        <li><strong>Quantization:</strong> High-frequency details reduced based on quality factor</li>
+                        <li><strong>Reconstruction:</strong> Inverse operations to rebuild the image</li>
+                    </ul>
+                    <p style="margin-top: 10px; color: #666;"><strong>Tip:</strong> Lower quality = more compression but more visible artifacts (blocking, ringing). Higher quality = larger file but better visual fidelity.</p>
+                </div>
             </div>
 
             <div id="qmatrix" style="display: none;">
                 <div class="qmatrix">
-                    <h3>📐 Quantization Matrix</h3>
+                    <h3>Quantization Matrix</h3>
+                    <p class="qmatrix-explanation">This 8x8 matrix determines how much each frequency component is divided. 
+                    Larger values = more compression (more information lost). Top-left values are smaller to preserve 
+                    low-frequency content (smooth gradients), while bottom-right values are larger to discard 
+                    high-frequency details that humans are less sensitive to.</p>
                     <div class="qmatrix-grid" id="qmatrixGrid"></div>
                 </div>
             </div>
@@ -318,12 +396,18 @@
             <div id="visualizations" style="display: none;">
                 <div class="images">
                     <div class="image-container">
-                        <h3>🌊 DCT Coefficients</h3>
+                        <h3>DCT Coefficients</h3>
                         <img id="dctImage" src="" alt="DCT">
+                        <p class="viz-explanation">Shows the frequency components of each 8x8 block. 
+                        Brighter areas = higher energy. Top-left corner contains low frequencies (smooth areas), 
+                        bottom-right contains high frequencies (edges/details).</p>
                     </div>
                     <div class="image-container">
-                        <h3>🔢 Quantized Coefficients</h3>
+                        <h3>Quantized Coefficients</h3>
                         <img id="quantizedImage" src="" alt="Quantized">
+                        <p class="viz-explanation">Shows coefficients after quantization. Many values become zero 
+                        (dark areas), especially high-frequency components. This is where compression happens - 
+                        more zeros = better compression but more quality loss.</p>
                     </div>
                 </div>
             </div>
@@ -332,6 +416,30 @@
 
     <script>
         let sessionId = null;
+
+        // Color mode explanations
+        const colorModeExplanations = {
+            'RGB': `<strong>RGB Mode:</strong> Processes Red, Green, Blue channels separately. 
+                Each channel undergoes DCT and quantization independently. Simple but less efficient 
+                than YCbCr because it doesn't exploit human visual perception characteristics.
+                <br><br><em>Best for:</em> Technical analysis, when you need to preserve exact color values.`,
+            'YCbCr': `<strong>YCbCr Mode (JPEG Standard):</strong> Converts image to luminance (Y) and 
+                chrominance (Cb, Cr) components. Human eyes are more sensitive to brightness than color, 
+                so chrominance channels can be compressed more aggressively (4:2:0 subsampling).
+                <br><br><em>Best for:</em> Maximum compression efficiency, standard JPEG behavior.`,
+            'GRAYSCALE': `<strong>Grayscale Mode:</strong> Only processes the luminance (brightness) channel, 
+                discarding all color information. Results in a black-and-white image but achieves 
+                the highest compression ratio since only one channel needs to be processed.
+                <br><br><em>Best for:</em> Documents, text, or when color is not important.`
+        };
+
+        // Update color mode explanation
+        const colorModeSelect = document.getElementById('colorMode');
+        const colorModeExplanation = document.getElementById('colorModeExplanation');
+        
+        colorModeSelect.addEventListener('change', (e) => {
+            colorModeExplanation.innerHTML = colorModeExplanations[e.target.value];
+        });
 
         // Quality slider
         const qualitySlider = document.getElementById('qualitySlider');

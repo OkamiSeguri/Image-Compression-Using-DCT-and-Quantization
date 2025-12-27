@@ -4,6 +4,7 @@ A desktop GUI application for JPEG compression simulation.
 """
 
 import sys
+import platform
 import numpy as np
 import cv2
 from pathlib import Path
@@ -165,7 +166,10 @@ class JPEGCompressorApp(QMainWindow):
     
     def update_status(self):
         """Update status bar with file count."""
-        file_count = len(list(COMPRESSED_FOLDER.glob("*.jpg")))
+        # Count multiple image formats
+        file_count = 0
+        for ext in ['*.jpg', '*.jpeg', '*.png']:
+            file_count += len(list(COMPRESSED_FOLDER.glob(ext)))
         self.statusBar().showMessage(f"Saved files: {file_count} | Output: {COMPRESSED_FOLDER.absolute()}")
     
     def on_quality_changed(self, value):
@@ -195,17 +199,20 @@ class JPEGCompressorApp(QMainWindow):
             "Images (*.png *.jpg *.jpeg *.bmp *.webp *.tiff);;All Files (*)"
         )
         if file_path:
-            self.original_image = cv2.imread(file_path)
+            # Use IMREAD_COLOR to ensure 3-channel BGR image
+            self.original_image = cv2.imread(file_path, cv2.IMREAD_COLOR)
             self.current_filename = Path(file_path).stem
             
             if self.original_image is not None:
                 self.display_image(self.original_image, self.original_label)
                 h, w = self.original_image.shape[:2]
-                self.original_info.setText(f"Size: {w}x{h} | File: {Path(file_path).name}")
+                file_size = Path(file_path).stat().st_size
+                size_str = f"{file_size / 1024:.1f} KB" if file_size < 1024 * 1024 else f"{file_size / (1024 * 1024):.2f} MB"
+                self.original_info.setText(f"Size: {w}x{h} | {size_str} | {Path(file_path).name}")
                 self.compress_btn.setEnabled(True)
                 self.statusBar().showMessage(f"Loaded: {file_path}")
             else:
-                QMessageBox.warning(self, "Error", f"Could not load image: {file_path}")
+                QMessageBox.warning(self, "Error", f"Could not load image: {file_path}\n\nMake sure the file exists and is a valid image format.")
     
     def compress_image(self):
         """Compress the loaded image."""
@@ -264,25 +271,53 @@ class JPEGCompressorApp(QMainWindow):
             )
     
     def open_output_folder(self):
-        """Open the output folder in file explorer."""
+        """Open the output folder in file explorer (cross-platform)."""
         import subprocess
-        subprocess.Popen(f'explorer "{COMPRESSED_FOLDER.absolute()}"')
+        
+        folder_path = str(COMPRESSED_FOLDER.absolute())
+        system = platform.system()
+        
+        try:
+            if system == 'Windows':
+                subprocess.Popen(f'explorer "{folder_path}"', shell=True)
+            elif system == 'Darwin':  # macOS
+                subprocess.Popen(['open', folder_path])
+            else:  # Linux and others
+                subprocess.Popen(['xdg-open', folder_path])
+        except Exception as e:
+            QMessageBox.warning(self, "Error", f"Could not open folder: {e}")
     
     def display_image(self, image: np.ndarray, label: QLabel):
         """Display an image on a QLabel."""
-        rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        h, w, ch = rgb_image.shape
-        bytes_per_line = ch * w
-        qt_image = QImage(rgb_image.data, w, h, bytes_per_line, QImage.Format.Format_RGB888)
-        pixmap = QPixmap.fromImage(qt_image)
-        
-        # Scale to fit label while maintaining aspect ratio
-        scaled_pixmap = pixmap.scaled(
-            label.size(),
-            Qt.AspectRatioMode.KeepAspectRatio,
-            Qt.TransformationMode.SmoothTransformation
-        )
-        label.setPixmap(scaled_pixmap)
+        try:
+            # Handle grayscale images
+            if len(image.shape) == 2:
+                rgb_image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
+            elif image.shape[2] == 4:
+                rgb_image = cv2.cvtColor(image, cv2.COLOR_BGRA2RGB)
+            else:
+                rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+            
+            h, w, ch = rgb_image.shape
+            bytes_per_line = ch * w
+            
+            # Make a copy to ensure data persistence
+            rgb_image = np.ascontiguousarray(rgb_image)
+            
+            qt_image = QImage(rgb_image.data, w, h, bytes_per_line, QImage.Format.Format_RGB888)
+            # Copy the image data to avoid memory issues
+            qt_image = qt_image.copy()
+            pixmap = QPixmap.fromImage(qt_image)
+            
+            # Scale to fit label while maintaining aspect ratio
+            scaled_pixmap = pixmap.scaled(
+                label.size(),
+                Qt.AspectRatioMode.KeepAspectRatio,
+                Qt.TransformationMode.SmoothTransformation
+            )
+            label.setPixmap(scaled_pixmap)
+        except Exception as e:
+            label.setText(f"Error displaying image: {e}")
 
 
 def main():

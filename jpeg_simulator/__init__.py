@@ -4,6 +4,7 @@ A comprehensive JPEG compression simulation toolkit.
 """
 
 from .core.compressor import JPEGCompressor, simulate_compression
+from .core.compression import JPEGSimulator, quick_compress
 from .core.dct import DCTProcessor
 from .core.quantization import QuantizationProcessor
 from .core.color_space import ColorSpaceConverter
@@ -21,6 +22,7 @@ __author__ = "JPEG Simulator Team"
 __all__ = [
     # Core classes
     'JPEGCompressor',
+    'JPEGSimulator',
     'DCTProcessor', 
     'QuantizationProcessor',
     'ColorSpaceConverter',
@@ -28,6 +30,7 @@ __all__ = [
     
     # Convenience functions
     'simulate_compression',
+    'quick_compress',
     
     # Metrics
     'calculate_psnr',
