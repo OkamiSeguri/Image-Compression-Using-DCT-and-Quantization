@@ -1,0 +1,16 @@
+# JPEG Compression Simulator Requirements
+
+# Core dependencies
+numpy>=1.24.0
+opencv-python>=4.8.0
+Pillow>=10.0.0
+
+# Streamlit UI
+streamlit>=1.28.0
+matplotlib>=3.7.0
+
+# Flask Web UI
+Flask>=3.0.0
+
+# PyQt6 Desktop UI
+PyQt6>=6.6.0

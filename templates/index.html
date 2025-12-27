@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JPEG Compression Simulator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .controls {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+
+        .control-group {
+            margin-bottom: 20px;
+        }
+
+        .control-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        .control-group input[type="file"] {
+            width: 100%;
+            padding: 10px;
+            border: 2px dashed #667eea;
+            border-radius: 5px;
+            background: white;
+            cursor: pointer;
+        }
+
+        .control-group input[type="range"] {
+            width: 100%;
+            height: 8px;
+            background: #ddd;
+            border-radius: 5px;
+            outline: none;
+        }
+
+        .control-group input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #667eea;
+            cursor: pointer;
+            border-radius: 50%;
+        }
+
+        .control-group select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 1em;
+        }
+
+        .slider-value {
+            display: inline-block;
+            font-weight: bold;
+            color: #667eea;
+            font-size: 1.2em;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.1em;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            font-weight: 600;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .stat-card h3 {
+            font-size: 0.9em;
+            opacity: 0.9;
+            margin-bottom: 10px;
+        }
+
+        .stat-card .value {
+            font-size: 2em;
+            font-weight: bold;
+        }
+
+        .images {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .image-container {
+            text-align: center;
+        }
+
+        .image-container h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .image-container img {
+            width: 100%;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .qmatrix {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+
+        .qmatrix h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .qmatrix-grid {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 5px;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        .qmatrix-cell {
+            background: white;
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+            font-weight: bold;
+            border-radius: 3px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            font-size: 1.2em;
+            color: #667eea;
+        }
+
+        .error {
+            background: #ff4444;
+            color: white;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+
+        .info {
+            background: #4CAF50;
+            color: white;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+
+        #visualizations {
+            margin-top: 30px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🖼️ JPEG Compression Simulator</h1>
+            <p>Demonstrating DCT and Quantization Algorithms</p>
+        </div>
+
+        <div class="content">
+            <div class="controls">
+                <div class="control-group">
+                    <label for="imageInput">📁 Upload Image (BMP, PNG, JPG)</label>
+                    <input type="file" id="imageInput" accept="image/*">
+                </div>
+
+                <div class="control-group">
+                    <label for="qualitySlider">
+                        🎚️ Quality Factor: <span class="slider-value" id="qualityValue">50</span>
+                    </label>
+                    <input type="range" id="qualitySlider" min="1" max="100" value="50">
+                </div>
+
+                <div class="control-group">
+                    <label for="colorMode">🎨 Color Mode</label>
+                    <select id="colorMode">
+                        <option value="RGB">RGB (Full Color)</option>
+                        <option value="YCbCr">YCbCr (JPEG Standard)</option>
+                        <option value="GRAYSCALE">Grayscale (Luminance Only)</option>
+                    </select>
+                </div>
+
+                <div style="text-align: center; margin-top: 20px;">
+                    <button class="btn" id="compressBtn" disabled>🔄 Compress Image</button>
+                    <button class="btn" id="visualizeBtn" disabled style="margin-left: 10px;">👁️ Show Visualizations</button>
+                    <button class="btn" id="downloadBtn" disabled style="margin-left: 10px;">💾 Download</button>
+                </div>
+            </div>
+
+            <div id="message"></div>
+
+            <div id="stats" style="display: none;">
+                <div class="stats">
+                    <div class="stat-card">
+                        <h3>Quality Factor</h3>
+                        <div class="value" id="statQuality">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Compression Ratio</h3>
+                        <div class="value" id="statRatio">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Zero Coefficients</h3>
+                        <div class="value" id="statZero">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>PSNR</h3>
+                        <div class="value" id="statPSNR">-</div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="images" style="display: none;">
+                <div class="images">
+                    <div class="image-container">
+                        <h3>Original Image</h3>
+                        <img id="originalImage" src="" alt="Original">
+                    </div>
+                    <div class="image-container">
+                        <h3>Compressed Image</h3>
+                        <img id="compressedImage" src="" alt="Compressed">
+                    </div>
+                </div>
+            </div>
+
+            <div id="qmatrix" style="display: none;">
+                <div class="qmatrix">
+                    <h3>📐 Quantization Matrix</h3>
+                    <div class="qmatrix-grid" id="qmatrixGrid"></div>
+                </div>
+            </div>
+
+            <div id="visualizations" style="display: none;">
+                <div class="images">
+                    <div class="image-container">
+                        <h3>🌊 DCT Coefficients</h3>
+                        <img id="dctImage" src="" alt="DCT">
+                    </div>
+                    <div class="image-container">
+                        <h3>🔢 Quantized Coefficients</h3>
+                        <img id="quantizedImage" src="" alt="Quantized">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let sessionId = null;
+
+        // Quality slider
+        const qualitySlider = document.getElementById('qualitySlider');
+        const qualityValue = document.getElementById('qualityValue');
+        qualitySlider.addEventListener('input', (e) => {
+            qualityValue.textContent = e.target.value;
+        });
+
+        // File upload
+        const imageInput = document.getElementById('imageInput');
+        imageInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('image', file);
+
+            showMessage('Uploading image...', 'info');
+
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    sessionId = data.session_id;
+                    document.getElementById('compressBtn').disabled = false;
+                    showMessage(`Image uploaded! Size: ${data.width} × ${data.height}`, 'info');
+                } else {
+                    showMessage('Error: ' + data.error, 'error');
+                }
+            } catch (error) {
+                showMessage('Error uploading image: ' + error.message, 'error');
+            }
+        });
+
+        // Compress button
+        document.getElementById('compressBtn').addEventListener('click', async () => {
+            if (!sessionId) return;
+
+            const quality = parseInt(qualitySlider.value);
+            const colorMode = document.getElementById('colorMode').value;
+
+            showMessage('Compressing image...', 'info');
+
+            try {
+                const response = await fetch('/compress', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        session_id: sessionId,
+                        quality_factor: quality,
+                        color_mode: colorMode
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Update images
+                    document.getElementById('originalImage').src = data.original_image;
+                    document.getElementById('compressedImage').src = data.compressed_image;
+                    document.getElementById('images').style.display = 'block';
+
+                    // Update stats
+                    document.getElementById('statQuality').textContent = data.stats.quality_factor;
+                    document.getElementById('statRatio').textContent = data.stats.compression_ratio + 'x';
+                    document.getElementById('statZero').textContent = data.stats.zero_percentage + '%';
+                    document.getElementById('statPSNR').textContent = data.stats.psnr + ' dB';
+                    document.getElementById('stats').style.display = 'block';
+
+                    // Update Q-matrix
+                    const qmatrixGrid = document.getElementById('qmatrixGrid');
+                    qmatrixGrid.innerHTML = '';
+                    data.q_matrix.forEach(row => {
+                        row.forEach(val => {
+                            const cell = document.createElement('div');
+                            cell.className = 'qmatrix-cell';
+                            cell.textContent = Math.round(val);
+                            qmatrixGrid.appendChild(cell);
+                        });
+                    });
+                    document.getElementById('qmatrix').style.display = 'block';
+
+                    document.getElementById('visualizeBtn').disabled = false;
+                    document.getElementById('downloadBtn').disabled = false;
+
+                    showMessage('Compression complete!', 'info');
+                } else {
+                    showMessage('Error: ' + data.error, 'error');
+                }
+            } catch (error) {
+                showMessage('Error compressing image: ' + error.message, 'error');
+            }
+        });
+
+        // Visualize button
+        document.getElementById('visualizeBtn').addEventListener('click', async () => {
+            if (!sessionId) return;
+
+            showMessage('Generating visualizations...', 'info');
+
+            try {
+                const response = await fetch('/visualize', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ session_id: sessionId })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    document.getElementById('dctImage').src = data.dct_image;
+                    document.getElementById('quantizedImage').src = data.quantized_image;
+                    document.getElementById('visualizations').style.display = 'block';
+                    showMessage('Visualizations ready!', 'info');
+                } else {
+                    showMessage('Error: ' + data.error, 'error');
+                }
+            } catch (error) {
+                showMessage('Error generating visualizations: ' + error.message, 'error');
+            }
+        });
+
+        // Download button
+        document.getElementById('downloadBtn').addEventListener('click', async () => {
+            if (!sessionId) return;
+
+            try {
+                const response = await fetch('/download', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ session_id: sessionId })
+                });
+
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `compressed_qf${qualitySlider.value}.png`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+
+                showMessage('Download started!', 'info');
+            } catch (error) {
+                showMessage('Error downloading image: ' + error.message, 'error');
+            }
+        });
+
+        function showMessage(text, type) {
+            const messageDiv = document.getElementById('message');
+            messageDiv.innerHTML = `<div class="${type}">${text}</div>`;
+            setTimeout(() => {
+                messageDiv.innerHTML = '';
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
